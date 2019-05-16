@@ -62,14 +62,51 @@ postHomeR = do
             let mbuser = Just user
             defaultLayout $(widgetTemplFile "src/forum/templates/home.html")
 
+questionAForm :: ThemeId -> AForm (HandlerFor Forum) Question
+questionAForm tid = 
+	Question <$> 
+		pure tid <*>
+		liftToAForm requireAuthId <*>
+		liftToAForm (liftIO getCurrentTime) <*>
+		freq textField (withPlaceholder "Introduiu el títol del tema" "Titol") Nothing  <*>
+        freq textareaField (withPlaceholder "Introduiu la descripció del tema" "Descripció") Nothing
+
 
 getThemeR :: ThemeId -> HandlerFor Forum Html
 getThemeR tid = do
-    fail "A completar per l'estudiant"
+    db <- getsSite forumDb
+	case liftIO $ getTheme tid db of 
+		Just theme -> do
+			questions <- liftIO $ getQuestionList tid db
+			mbuser <- maybeAuthId
+			qformw <- generateAFormPost $ questionAFrom tid
+			defaultLayout $ do 
+				setTitle "Theme"
+				widgetTemplFile "src/forum/templates/theme.html"
+		Nothing 
+			-- todo check theme not found
+	
+	
+    -- fail "A completar per l'estudiant"
 
 postThemeR :: ThemeId -> HandlerFor Forum Html
 postThemeR tid = do
-    fail "A completar per l'estudiant"
+    user <- requireAuthId
+    db <- getsSite forumDb
+	(tformr, tformw) <- runAFormPost themeForm
+	isAdd <- isJust <$> lookupPostParam "add"
+    isMark <- isJust <$> lookupPostParam "mark"
+    isDelete <- isJust <$> lookupPostParam "delete"
+	if isAdd then do
+		case tformr of 
+			FormSuccess newtheme -> do
+				liftIO $ addTheme newtheme db
+				-- todo redirect where¿
+			_ -> do 
+				-- ?????
+	else if isMark then do 
+		ca
+    -- fail "A completar per l'estudiant"
 
 
 getQuestionR :: ThemeId -> QuestionId -> HandlerFor Forum Html
