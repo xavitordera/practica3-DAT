@@ -83,8 +83,9 @@ getThemeR tid = do
 			defaultLayout $ do 
 				setTitle "Theme"
 				widgetTemplFile "src/forum/templates/theme.html"
-		Nothing 
-			-- todo check theme not found
+        _ -> do
+            defaultLayout $ do 
+				widgetTemplFile "src/forum/templates/theme.html"
 	
 	
     -- fail "A completar per l'estudiant"
@@ -93,8 +94,18 @@ postThemeR :: ThemeId -> HandlerFor Forum Html
 postThemeR tid = do
     user <- requireAuthId
     db <- getsSite forumDb
-	(tformr, tformw) <- runAFormPost themeForm
-	isAdd <- isJust <$> lookupPostParam "add"
+    (qformr, qformw) <- runAFormPost $ questionAForm tid
+    case qformr of 
+        FormSuccess newQuestion -> do
+            liftIO $ addQuestion newQuestion db
+            redirectRoute ThemeR []
+        _ -> do 
+            questions <- liftIO $ getQuestionList tid db
+            let mbuser = Just user
+            let isLeader = maybe False (tLeader theme ==) mbuser
+            defaultLayout $(widgetTemplFile "src/forum/templates/theme.html")
+
+	{-isAdd <- isJust <$> lookupPostParam "add"
     isMark <- isJust <$> lookupPostParam "mark"
     isDelete <- isJust <$> lookupPostParam "delete"
 	if isAdd then do
@@ -105,13 +116,49 @@ postThemeR tid = do
 			_ -> do 
 				-- ?????
 	else if isMark then do 
-		ca
-    -- fail "A completar per l'estudiant"
+		checkBoxes <- lookupPostParams "tid"
+        let tids = catMaybes ((readMaybe . T.unpack) <$> checkBoxes)
+        forM_ tids $ \ tid ->
+            liftIO $ markTask tid db
+        redirectRoute HomeR []
 
+    else if isDelete then do
+        checkBoxes <- lookupPostParams "tid"
+        let tids = catMaybes ((readMaybe . T.unpack) <$> checkBoxes)
+        forM_ tids $ \ tid ->
+            liftIO $ deleteTheme tid db
+        redirectRoute HomeR []
+    else
+        invalidArgs ["add","mark","delete"]
+    -- fail "A completar per l'estudiant"-}
+
+
+answerAForm :: ThemeId -> QuestionId -> AForm (HandlerFor Forum) Answer
+answerAForm tid qid =
+    Answer <$> pure qid
+            <*> liftToAForm requireAuthId
+            <*> liftToAForm $ liftIO getCurrentTime
+            <*> freq textareaField (withPlaceholder "Introduiu la resposta" "Resposta") Nothing
 
 getQuestionR :: ThemeId -> QuestionId -> HandlerFor Forum Html
-getQuestionR tid qid = do
-    fail "A completar per l'estudiant"
+getQuestionR tid qid = do   
+    db <- getsSite forumDb
+    theme <- do 
+        maybeTheme <- liftIO $ getTheme tid db
+        maybe notFound pure maybeTheme
+    question <- do 
+        maybeQuestio  <- liftIO $ getQuestion qid db
+        maybe notFound pure maybeQuestion
+    answers <- liftIO $ getAnswerList qid db
+    mbuser <- maybeAuthId 
+    let isLeader = maybe False (tLeader theme ==) mbuser
+    aformw <- generateAFormPost (answerForm tid qid)
+    -- Return HTML content
+    defaultLayout $ do
+        setTitle "Question"
+        $(widgetTemplFile "src/forum/templates/question.html")
+    --fail "A completar per l'estudiant"
+    
 
 postQuestionR :: ThemeId -> QuestionId -> HandlerFor Forum Html
 postQuestionR tid qid = do
