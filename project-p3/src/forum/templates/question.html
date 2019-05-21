@@ -1,0 +1,19 @@
+<p><small>#{qUser question}: </small> <big>#{qTitle question}</big> </p>
+
+<p> Descripció: #{qText question}</p>
+
+
+$forall{ p <- answers }
+  <p>#{aUser (snd p)}: #{aText (snd p)} | #{show (aPosted (snd p))}</p>
+$end
+
+$maybe{ user <- mbuser }
+  <div class="row">
+  <div class="col-sm-offset-2 col-sm-10">
+    <form role="form" method="POST" action="@{QuestionR tid qid}">
+      ^{aformw}
+      <button type="submit" class="btn btn-success">Afegeix resposta</button>
+    </form>
+  </div>
+  </div>
+$end

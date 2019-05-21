@@ -1,0 +1,21 @@
+<h2> #{tTitle theme}</h2>
+
+<h2> Descripció: #{tDescription theme}</h3>
+
+
+$forall{ p <- questions }
+  <p>#{qUser (snd p)}: <a href="@{QuestionR (qTheme (snd p)) (fst p) }">#{qTitle (snd p)}</a> | #{show (qPosted (snd p))}</p>
+$end
+
+$maybe{ user <- mbuser }
+  <div class="row">
+  <div class="col-sm-offset-2 col-sm-10">
+    <form role="form" method="POST" action="@{ThemeR tid}">
+      ^{qformw}
+      <button type="submit" class="btn btn-success">Afegeix pregunta</button>
+    </form>
+  </div>
+  </div>
+$end
+
+
